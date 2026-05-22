@@ -259,13 +259,20 @@ pub async fn run(
         prompts,
     );
 
-    let dtype = dtype.unwrap_or_else(|| {
-        config
-            .dtype
-            .as_deref()
-            .and_then(|s| DType::from_str(s).ok())
-            .unwrap_or_default()
-    });
+    // NOTE: `gemma3_text` is only supported in fp32 by the candle backend, so when no
+    // `--dtype` is passed we override the default (which would be Float16 under
+    // `candle-cuda`) to Float32 to prevent runtime failures.
+    let dtype = if dtype.is_none() && config.model_type == "gemma3_text" {
+        DType::Float32
+    } else {
+        dtype.unwrap_or_else(|| {
+            config
+                .dtype
+                .as_deref()
+                .and_then(|s| DType::from_str(s).ok())
+                .unwrap_or_default()
+        })
+    };
 
     #[cfg(all(feature = "candle", feature = "metal"))]
     if dtype == DType::Bfloat16 {

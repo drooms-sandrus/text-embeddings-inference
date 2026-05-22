@@ -1,5 +1,5 @@
 use crate::models::{FlashQwen3Model, Model, Pplx1Config};
-use candle::{Result, Tensor};
+use candle::{DType, Result, Tensor};
 use candle_nn::VarBuilder;
 use text_embeddings_backend_core::{Batch, ModelType, Pool};
 
@@ -19,6 +19,18 @@ impl FlashPplx1Model {
                 }
             }
         };
+
+        // NOTE: Pplx1 applies an INT8 quantization head (`tanh()*127`) to the pooled
+        // embeddings; fp16 precision is insufficient and yields incorrect results, so
+        // this wrapper requires BF16. Routing in `CandleBackend::new` enforces this as
+        // well, but the guard is repeated here so the constraint is colocated with the
+        // quantization logic.
+        if vb.dtype() != DType::BF16 {
+            candle::bail!(
+                "FlashPplx1 requires DType::BF16 because of the INT8 quantization head, got {:?}",
+                vb.dtype()
+            );
+        }
 
         // NOTE: Qwen3 but the `config` contains `use_bidirectional_attention=true`
         let inner = FlashQwen3Model::load(vb, config, model_type)?;

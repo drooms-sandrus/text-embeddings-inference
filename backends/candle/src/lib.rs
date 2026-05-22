@@ -297,22 +297,6 @@ impl CandleBackend {
                         }
                     }
                 }
-                // NOTE: Temporarily left out given that supporting BF16 w/ Flash Attn requires an
-                // update on `candle` and `candle-extensions` which is still in progress
-                // #[cfg(feature = "cuda")]
-                // Device::Cuda(_) => {
-                //     let compute_cap = get_runtime_compute_cap().map_err(|e| {
-                //         BackendError::Start(format!("Failed to get CUDA compute capability: {e:?}"))
-                //     })?;
-                //     if compute_cap < 80 {
-                //         return Err(BackendError::Start(format!(
-                //             "BFloat16 requires CUDA compute capability >= 8.0 (Ampere or newer), \
-                //              but found {}.{}. Use float16 or float32 instead.",
-                //             compute_cap / 10,
-                //             compute_cap % 10
-                //         )));
-                //     }
-                // }
                 Device::Metal(_) => (),
             }
             Ok(DType::BF16)
@@ -596,10 +580,10 @@ impl CandleBackend {
             }
             #[cfg(feature = "cuda")]
             (Config::Pplx1(config), Device::Cuda(_)) => {
-                // TODO(alvarobartt): Include the `dtype` as an arg in `use_flash_attn`
-                if (dtype == DType::F16 || dtype == DType::BF16)
-                    && use_flash_attn(&[FlashAttn::V1, FlashAttn::V2])
-                {
+                // NOTE: Pplx1 applies an INT8 quantization head (`tanh()*127`) to the pooled
+                // embeddings. fp16 loses too much precision and yields incorrect results, so
+                // the flash path is restricted to BF16. fp32 falls back to the non-flash model.
+                if dtype == DType::BF16 && use_flash_attn(&[FlashAttn::V1, FlashAttn::V2]) {
                     tracing::info!("Starting FlashPplx1 model on {:?}", device);
                     Ok(Box::new(
                         FlashPplx1Model::load(vb, &config, model_type).s()?,
@@ -610,7 +594,8 @@ impl CandleBackend {
                 } else {
                     Err(BackendError::Start(
                         "Pplx1 on CUDA requires either F32 (without flash attention) or \
-                         F16/BF16 with flash attention enabled"
+                         BF16 with flash attention enabled. F16 is not supported because the \
+                         INT8 quantization head produces incorrect embeddings in fp16."
                             .to_string(),
                     ))
                 }
