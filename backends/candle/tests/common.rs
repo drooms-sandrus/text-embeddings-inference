@@ -290,7 +290,7 @@ pub fn load_tokenizer(model_root: &Path) -> Result<Tokenizer> {
             m.set_prepend_scheme(PrependScheme::First);
             tokenizer.with_pre_tokenizer(Some(PreTokenizerWrapper::Metaspace(m)));
         } else if let PreTokenizerWrapper::Sequence(s) = pre_tokenizer {
-            let pre_tokenizers: Vec<_> = s.clone().into_iter().collect();
+            let pre_tokenizers: Vec<_> = s.get_pre_tokenizers().to_vec();
             // Check if we have a Metaspace pre tokenizer in the sequence
             let has_metaspace = pre_tokenizers
                 .iter()
