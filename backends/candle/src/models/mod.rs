@@ -54,6 +54,9 @@ mod flash_qwen2;
 #[cfg(feature = "cuda")]
 mod flash_qwen3;
 
+#[cfg(feature = "cuda")]
+mod flash_pplx1;
+
 pub use bert::{BertConfig, BertModel, PositionEmbeddingType};
 pub use debertav2::{DebertaV2Config, DebertaV2Model};
 pub use dense::{Dense, DenseConfig, DenseLayer};
@@ -100,6 +103,9 @@ pub use flash_qwen2::FlashQwen2Model;
 
 #[cfg(feature = "cuda")]
 pub use flash_qwen3::FlashQwen3Model;
+
+#[cfg(feature = "cuda")]
+pub use flash_pplx1::FlashPplx1Model;
 
 pub(crate) trait Model {
     fn is_padded(&self) -> bool;
