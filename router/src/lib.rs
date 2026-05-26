@@ -259,9 +259,21 @@ pub async fn run(
         prompts,
     );
 
-    // NOTE: `gemma3_text` is only supported in fp32 by the candle backend, so when no
-    // `--dtype` is passed we override the default (which would be Float16 under
-    // `candle-cuda`) to Float32 to prevent runtime failures.
+    // Dtype resolution order (highest to lowest priority):
+    //   1. CLI `--dtype` flag (already in `dtype` as `Some(...)`)
+    //   2. `dtype` / `torch_dtype` field from the model's `config.json`
+    //      (deserialized into `ModelConfig::dtype` via `#[serde(alias = "torch_dtype")]`)
+    //   3. `DType::default()` — Float16 under `candle-cuda`, Float32 elsewhere
+    //
+    // The `gemma3_text` special-case short-circuits before step 2 because gemma3 only
+    // works in fp32 on the candle backend, but its `config.json` publishes
+    // `"torch_dtype": "bfloat16"`. Without the override, step 2 would resolve to BF16
+    // and fail at runtime.
+    //
+    // Step 2 is what enables zero-config BF16 for models like
+    // `perplexity-ai/pplx-embed-v1-0.6b`, whose `config.json` declares
+    // `"torch_dtype": "bfloat16"`. Without it, the fallback in step 3 would silently
+    // select Float16.
     let dtype = if dtype.is_none() && config.model_type == "gemma3_text" {
         DType::Float32
     } else {
