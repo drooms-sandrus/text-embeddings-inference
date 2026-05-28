@@ -8,6 +8,8 @@ router with bfloat16 (BF16) support enabled and a `FlashPplx1Model` wrapper
 that runs `perplexity-ai/pplx-embed-v1-0.6b` natively on NVIDIA GPUs with
 flash-attention.
 
+The image that is built this way is fully functional, as verified by internal tests against an internal dataset - evaluation results are consistent with the bf16 implementation in vLLM. Further, benchmarks show that efficiency is significantly improved compared to float32. Open technical debt is documented in [DEBT.md](DEBT.md) and includes cleanup and follow-up tasks that should be completed before merging this branch upstream.
+
 ---
 
 ## Table of Contents
