@@ -265,10 +265,13 @@ pub async fn run(
     //      (deserialized into `ModelConfig::dtype` via `#[serde(alias = "torch_dtype")]`)
     //   3. `DType::default()` — Float16 under `candle-cuda`, Float32 elsewhere
     //
-    // The `gemma3_text` special-case short-circuits before step 2 because gemma3 only
-    // works in fp32 on the candle backend, but its `config.json` publishes
-    // `"torch_dtype": "bfloat16"`. Without the override, step 2 would resolve to BF16
-    // and fail at runtime.
+    // The `gemma3_text` special-case short-circuits before step 2 because gemma3's
+    // `config.json` publishes `"torch_dtype": "bfloat16"`, but the candle backend
+    // currently rejects non-F32 for gemma3 pending a BF16 flash-attention
+    // implementation (see TODO in `backends/candle/src/lib.rs`). Note that the target
+    // dtype is BF16, not F16 — F16 would likely produce incorrect results for gemma3
+    // (same numerical-precision concern as Pplx1). This override should be removed
+    // when gemma3 BF16 support is added.
     //
     // Step 2 is what enables zero-config BF16 for models like
     // `perplexity-ai/pplx-embed-v1-0.6b`, whose `config.json` declares
