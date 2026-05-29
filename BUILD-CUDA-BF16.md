@@ -1,7 +1,7 @@
 # Building the `tei-bf16:<git-sha>` CUDA BF16 Image
 
-This document explains, step by step, how to reproduce the `tei-bf16:<git-sha>`
-Docker image that lives on the `feat/cuda-bf16-pplx1` branch of this fork. The
+This document explains, step by step, how to build a
+Docker image that is based on the `feat/cuda-bf16-pplx1` branch of this fork. The
 image is a CUDA build of the
 [text-embeddings-inference](https://github.com/huggingface/text-embeddings-inference)
 router with bfloat16 (BF16) support enabled and a `FlashPplx1Model` wrapper
